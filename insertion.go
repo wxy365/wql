@@ -1,11 +1,12 @@
 package q
 
 import (
-	"github.com/wxy365/basal/ds/slices"
-	"github.com/wxy365/basal/lei"
-	"github.com/wxy365/basal/text"
 	"reflect"
 	"strings"
+
+	"github.com/wxy365/basal/ds/slices"
+	"github.com/wxy365/basal/errs"
+	"github.com/wxy365/basal/text"
 )
 
 type Insertion[T any] struct {
@@ -16,7 +17,7 @@ type Insertion[T any] struct {
 func (i *Insertion[T]) GetStatement(ctx *RenderCtx) *Statement {
 
 	if len(i.rows) == 0 {
-		panic(lei.New("Empty payload to insert"))
+		panic(errs.New("Empty payload to insert"))
 	}
 	var fields []string
 	var fieldIndexes []int
@@ -32,11 +33,11 @@ func (i *Insertion[T]) GetStatement(ctx *RenderCtx) *Statement {
 		}
 	}
 	if len(fields) == 0 {
-		panic(lei.New("The struct '{0}' has no field mapped to table column", t.Name()))
+		panic(errs.New("The struct [{0}] has no field mapped to table column", t.Name()))
 	}
 	b := text.Build("insert into ", i.table.name, "(", strings.Join(fields, ", "), ") values ")
 
-	values := "(" + strings.Join(slices.New("?", len(fields)), ", ") + ")"
+	values := "(" + strings.Join(slices.New[[]string]("?", len(fields)), ", ") + ")"
 
 	params := make(map[int]any)
 	for _, t := range i.rows {

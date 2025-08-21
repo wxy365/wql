@@ -3,10 +3,11 @@ package q
 import (
 	"context"
 	"database/sql"
-	"github.com/wxy365/basal/fn"
-	"github.com/wxy365/basal/lei"
 	"reflect"
 	"strings"
+
+	"github.com/wxy365/basal/errs"
+	"github.com/wxy365/basal/fn"
 )
 
 type SelectQueryExprDsl struct {
@@ -178,8 +179,8 @@ func (s *SelectQueryExprDsl) Build() *Selection {
 	return s.selectDsl.Build()
 }
 
-func (s *SelectQueryExprDsl) Action(ctx context.Context, db *DB) error {
-	return s.selectDsl.Action(ctx, db)
+func (s *SelectQueryExprDsl) Action(ctx context.Context, optDb ...*DB) error {
+	return s.selectDsl.Action(ctx, optDb...)
 }
 
 func (s *SelectQueryExprDsl) ActionTx(ctx context.Context, tx *TX) error {
@@ -335,7 +336,11 @@ func (s *SelectDsl) Into(target any) *SelectDsl {
 	return s
 }
 
-func (s *SelectDsl) Action(ctx context.Context, db *DB) error {
+func (s *SelectDsl) Action(ctx context.Context, optDb ...*DB) error {
+	db := DataSource
+	if len(optDb) > 0 {
+		db = optDb[0]
+	}
 	renderCtx := &RenderCtx{
 		dbType: db.dbType,
 		cnt:    new(fn.Counter),
@@ -386,7 +391,7 @@ func (s *SelectDsl) readRows(rows *sql.Rows) error {
 		var fields []any
 		doVal := reflect.ValueOf(s.target)
 		if doVal.Kind() != reflect.Pointer {
-			return lei.New("The target is supposed to be of pointer kind")
+			return errs.New("The target is supposed to be of pointer kind")
 		}
 		doVal = doVal.Elem()
 		for doVal.Kind() == reflect.Pointer {
@@ -468,8 +473,8 @@ func (q *QueryExprWhereBuilder) Build() *Selection {
 	return q.queryExprDsl.Build()
 }
 
-func (q *QueryExprWhereBuilder) Action(ctx context.Context, db *DB) error {
-	return q.queryExprDsl.Action(ctx, db)
+func (q *QueryExprWhereBuilder) Action(ctx context.Context, optDb ...*DB) error {
+	return q.queryExprDsl.Action(ctx, optDb...)
 }
 
 func (q *QueryExprWhereBuilder) ActionTx(ctx context.Context, tx *TX) error {
@@ -713,8 +718,8 @@ type GroupByEnd struct {
 	queryExprDsl *SelectQueryExprDsl
 }
 
-func (g *GroupByEnd) Action(ctx context.Context, db *DB) error {
-	return g.queryExprDsl.Action(ctx, db)
+func (g *GroupByEnd) Action(ctx context.Context, optDb ...*DB) error {
+	return g.queryExprDsl.Action(ctx, optDb...)
 }
 
 func (g *GroupByEnd) ActionTx(ctx context.Context, tx *TX) error {
@@ -780,8 +785,8 @@ type LimitEnd struct {
 	selectDsl *SelectDsl
 }
 
-func (l *LimitEnd) Action(ctx context.Context, db *DB) error {
-	return l.selectDsl.Action(ctx, db)
+func (l *LimitEnd) Action(ctx context.Context, optDb ...*DB) error {
+	return l.selectDsl.Action(ctx, optDb...)
 }
 
 func (l *LimitEnd) ActionTx(ctx context.Context, tx *TX) error {
@@ -804,8 +809,8 @@ type OffsetEnd struct {
 	selectDsl *SelectDsl
 }
 
-func (o *OffsetEnd) Action(ctx context.Context, db *DB) error {
-	return o.selectDsl.Action(ctx, db)
+func (o *OffsetEnd) Action(ctx context.Context, optDb ...*DB) error {
+	return o.selectDsl.Action(ctx, optDb...)
 }
 
 func (o *OffsetEnd) ActionTx(ctx context.Context, tx *TX) error {

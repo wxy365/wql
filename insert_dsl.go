@@ -2,10 +2,11 @@ package q
 
 import (
 	"context"
-	"github.com/wxy365/basal/fn"
-	"github.com/wxy365/basal/lei"
 	"reflect"
 	"strings"
+
+	"github.com/wxy365/basal/errs"
+	"github.com/wxy365/basal/fn"
 )
 
 type InsertDsl[T any] struct {
@@ -20,7 +21,11 @@ func (i *InsertDsl[T]) Build() *Insertion[T] {
 	}
 }
 
-func (i *InsertDsl[T]) Action(ctx context.Context, db *DB) error {
+func (i *InsertDsl[T]) Action(ctx context.Context, optDb ...*DB) error {
+	db := DataSource
+	if len(optDb) > 0 {
+		db = optDb[0]
+	}
 	renderCtx := &RenderCtx{
 		dbType: db.dbType,
 		cnt:    new(fn.Counter),
@@ -66,7 +71,7 @@ func (i *InsertDsl[T]) ActionTx(ctx context.Context, tx *TX) error {
 
 func Insert[T any](rows ...T) *IntoGather[T] {
 	if len(rows) == 0 {
-		panic(lei.New("Nothing to insert"))
+		panic(errs.New("Nothing to insert"))
 	}
 	return &IntoGather[T]{
 		rows: rows,
@@ -75,7 +80,7 @@ func Insert[T any](rows ...T) *IntoGather[T] {
 
 func InsertDO[T DO](rows ...T) *InsertDsl[T] {
 	if len(rows) == 0 {
-		panic(lei.New("Nothing to insert"))
+		panic(errs.New("Nothing to insert"))
 	}
 	return Insert(rows...).Into(rows[0].TableName())
 }

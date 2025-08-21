@@ -115,7 +115,11 @@ func (u *UpdateDsl) OrderBy(spec ...OrderBySpec) *UpdateDsl {
 	return u
 }
 
-func (u *UpdateDsl) Action(ctx context.Context, db *DB) error {
+func (u *UpdateDsl) Action(ctx context.Context, optDb ...*DB) error {
+	db := DataSource
+	if len(optDb) > 0 {
+		db = optDb[0]
+	}
 	renderCtx := &RenderCtx{
 		dbType: db.dbType,
 		cnt:    new(fn.Counter),

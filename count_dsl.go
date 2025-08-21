@@ -2,8 +2,9 @@ package q
 
 import (
 	"context"
+
+	"github.com/wxy365/basal/errs"
 	"github.com/wxy365/basal/fn"
-	"github.com/wxy365/basal/lei"
 )
 
 type CountFromGather struct {
@@ -21,7 +22,11 @@ type CountDsl struct {
 	joinSpecs    []*JoinSpec
 }
 
-func (c *CountDsl) Action(ctx context.Context, db *DB) (uint64, error) {
+func (c *CountDsl) Action(ctx context.Context, optDb ...*DB) (uint64, error) {
+	db := DataSource
+	if len(optDb) > 0 {
+		db = optDb[0]
+	}
 	var ret uint64
 	renderCtx := &RenderCtx{
 		dbType: db.dbType,
@@ -30,7 +35,7 @@ func (c *CountDsl) Action(ctx context.Context, db *DB) (uint64, error) {
 	stm, args := c.Build().GetStatement(renderCtx).prepare()
 	row := db.QueryRowContext(ctx, stm, args...)
 	err := row.Scan(&ret)
-	return ret, lei.Wrap("Error in counting. sql: {0}, parameters: {1}", err, stm, args)
+	return ret, errs.Wrap(err, "Error in counting. sql: {0}, parameters: {1}], stm, args)
 }
 
 func (c *CountDsl) ActionTx(ctx context.Context, tx *TX) (uint64, error) {
@@ -42,7 +47,7 @@ func (c *CountDsl) ActionTx(ctx context.Context, tx *TX) (uint64, error) {
 	stm, args := c.Build().GetStatement(renderCtx).prepare()
 	row := tx.QueryRowContext(ctx, stm, args...)
 	err := row.Scan(&ret)
-	return ret, lei.Wrap("Error in counting. sql: {0}, parameters: {1}", err, stm, args)
+	return ret, errs.Wrap(err, "Error in counting. sql: {0}, parameters: {1}], stm, args)
 }
 
 type CountWhereBuilder struct {
@@ -51,8 +56,8 @@ type CountWhereBuilder struct {
 	countDsl       *CountDsl
 }
 
-func (c *CountWhereBuilder) Action(ctx context.Context, db *DB) (uint64, error) {
-	return c.countDsl.Action(ctx, db)
+func (c *CountWhereBuilder) Action(ctx context.Context, optDb ...*DB) (uint64, error) {
+	return c.countDsl.Action(ctx, optDb...)
 }
 
 func (c *CountWhereBuilder) ActionTx(ctx context.Context, tx *TX) (uint64, error) {
