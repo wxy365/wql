@@ -35,7 +35,7 @@ func (c *CountDsl) Action(ctx context.Context, optDb ...*DB) (uint64, error) {
 	stm, args := c.Build().GetStatement(renderCtx).prepare()
 	row := db.QueryRowContext(ctx, stm, args...)
 	err := row.Scan(&ret)
-	return ret, errs.Wrap(err, "Error in counting. sql: {0}, parameters: {1}], stm, args)
+	return ret, errs.Wrap(err, "Error in counting. sql: {0}, parameters: {1}", stm, args)
 }
 
 func (c *CountDsl) ActionTx(ctx context.Context, tx *TX) (uint64, error) {
@@ -47,7 +47,7 @@ func (c *CountDsl) ActionTx(ctx context.Context, tx *TX) (uint64, error) {
 	stm, args := c.Build().GetStatement(renderCtx).prepare()
 	row := tx.QueryRowContext(ctx, stm, args...)
 	err := row.Scan(&ret)
-	return ret, errs.Wrap(err, "Error in counting. sql: {0}, parameters: {1}], stm, args)
+	return ret, errs.Wrap(err, "Error in counting. sql: {0}, parameters: {1}", stm, args)
 }
 
 type CountWhereBuilder struct {
