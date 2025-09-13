@@ -31,12 +31,12 @@ func init() {
 var DataSource *DB
 
 type DBCfg struct {
-	Driver             string `json:"driver"`
-	Dsn                string `json:"dsn"`
-	MaxOpenConns       int    `json:"max_open_conns"`
-	MaxIdleConns       int    `json:"max_idle_conns"`
-	ConnMaxIdleSeconds int    `json:"conn_max_idle_seconds"`
-	ConnMaxLifeSeconds int    `json:"conn_max_life_seconds"`
+	Driver             string `map:"driver"`
+	Dsn                string `map:"dsn"`
+	MaxOpenConns       int    `map:"max_open_conns"`
+	MaxIdleConns       int    `map:"max_idle_conns"`
+	ConnMaxIdleSeconds int    `map:"conn_max_idle_seconds"`
+	ConnMaxLifeSeconds int    `map:"conn_max_life_seconds"`
 }
 
 type DB struct {
