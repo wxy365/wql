@@ -24,8 +24,12 @@ func (s *Statement) prepare() (string, []any) {
 				paramNameEnd = len(r)
 			}
 			paramName := r[i+1 : i+paramNameEnd]
-			paramNameInt, _ := strconv.Atoi(string(paramName))
-			params = append(params, s.params[paramNameInt])
+			paramNameInt, err := strconv.Atoi(string(paramName))
+			if err != nil {
+				params = append(params, nil)
+			} else {
+				params = append(params, s.params[paramNameInt])
+			}
 			i += paramNameEnd
 		default:
 			b.WriteRune(c)

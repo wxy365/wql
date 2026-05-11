@@ -2,6 +2,7 @@ package q
 
 import (
 	"database/sql"
+	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/wxy365/basal/cfg/def"
@@ -13,12 +14,24 @@ func init() {
 		dbCfg, err := def.GetObj[DBCfg]("database")
 		if err == nil && dbCfg.Dsn != "" {
 			dbType := ParseDbType(dbCfg.Driver)
-			sqlDb, err := sql.Open(dbCfg.Driver, dbCfg.Driver)
+			sqlDb, err := sql.Open(dbCfg.Driver, dbCfg.Dsn)
 			if err != nil {
 				panic("illegal driver or datasource name")
 			}
 			if err = sqlDb.Ping(); err != nil {
 				panic("cannot connect to database: " + err.Error())
+			}
+			if dbCfg.MaxOpenConns > 0 {
+				sqlDb.SetMaxOpenConns(dbCfg.MaxOpenConns)
+			}
+			if dbCfg.MaxIdleConns > 0 {
+				sqlDb.SetMaxIdleConns(dbCfg.MaxIdleConns)
+			}
+			if dbCfg.ConnMaxIdleSeconds > 0 {
+				sqlDb.SetConnMaxIdleTime(time.Duration(dbCfg.ConnMaxIdleSeconds) * time.Second)
+			}
+			if dbCfg.ConnMaxLifeSeconds > 0 {
+				sqlDb.SetConnMaxLifetime(time.Duration(dbCfg.ConnMaxLifeSeconds) * time.Second)
 			}
 			DataSource = &DB{
 				dbType: dbType,

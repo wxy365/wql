@@ -32,14 +32,24 @@ func (i *InsertDsl[T]) Action(ctx context.Context, optDb ...*DB) error {
 	}
 	stm, params := i.Build().GetStatement(renderCtx).prepare()
 	result, err := db.ExecContext(ctx, stm, params...)
+	if err != nil {
+		return err
+	}
 	id, err := result.LastInsertId()
 	if err != nil {
 		return err
 	}
 	inserted := i.rows[len(i.rows)-1]
 	val := reflect.ValueOf(inserted)
+	if val.Kind() == reflect.Pointer {
+		val = val.Elem()
+	}
+	if !val.CanAddr() {
+		// non-addressable value (not a pointer), skip auto-increment write-back
+		return nil
+	}
 	for j := 0; j < val.NumField(); j++ {
-		if col, ok := val.Type().Field(j).Tag.Lookup("db"); ok && strings.HasSuffix(col, ":auto_incr") {
+		if col, ok := val.Type().Field(j).Tag.Lookup("db"); ok && strings.HasSuffix(col, ";auto_incr") {
 			val.Field(j).SetInt(id)
 			break
 		}
@@ -54,14 +64,23 @@ func (i *InsertDsl[T]) ActionTx(ctx context.Context, tx *TX) error {
 	}
 	stm, params := i.Build().GetStatement(renderCtx).prepare()
 	result, err := tx.ExecContext(ctx, stm, params...)
+	if err != nil {
+		return err
+	}
 	id, err := result.LastInsertId()
 	if err != nil {
 		return err
 	}
 	inserted := i.rows[len(i.rows)-1]
 	val := reflect.ValueOf(inserted)
+	if val.Kind() == reflect.Pointer {
+		val = val.Elem()
+	}
+	if !val.CanAddr() {
+		return nil
+	}
 	for j := 0; j < val.NumField(); j++ {
-		if col, ok := val.Type().Field(j).Tag.Lookup("db"); ok && strings.HasSuffix(col, ":auto_incr") {
+		if col, ok := val.Type().Field(j).Tag.Lookup("db"); ok && strings.HasSuffix(col, ";auto_incr") {
 			val.Field(j).SetInt(id)
 			break
 		}

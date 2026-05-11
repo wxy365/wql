@@ -347,15 +347,10 @@ func (s *SelectDsl) Action(ctx context.Context, optDb ...*DB) error {
 	}
 	stm, args := s.Build().GetStatement(renderCtx).prepare()
 	rows, err := db.QueryContext(ctx, stm, args...)
-	defer func() {
-		err = rows.Close()
-		if err != nil {
-			panic(err)
-		}
-	}()
 	if err != nil {
 		return err
 	}
+	defer rows.Close()
 	return s.readRows(rows)
 }
 
@@ -366,15 +361,10 @@ func (s *SelectDsl) ActionTx(ctx context.Context, tx *TX) error {
 	}
 	stm, args := s.Build().GetStatement(renderCtx).prepare()
 	rows, err := tx.QueryContext(ctx, stm, args...)
-	defer func() {
-		err = rows.Close()
-		if err != nil {
-			panic(err)
-		}
-	}()
 	if err != nil {
 		return err
 	}
+	defer rows.Close()
 	return s.readRows(rows)
 }
 
@@ -387,28 +377,36 @@ func (s *SelectDsl) readRows(rows *sql.Rows) error {
 	if err != nil {
 		return err
 	}
-	for rows.Next() {
-		var fields []any
-		doVal := reflect.ValueOf(s.target)
-		if doVal.Kind() != reflect.Pointer {
-			return errs.New("The target is supposed to be of pointer kind")
-		}
+	doVal := reflect.ValueOf(s.target)
+	if doVal.Kind() != reflect.Pointer {
+		return errs.New("The target is supposed to be of pointer kind")
+	}
+	doVal = doVal.Elem()
+	for doVal.Kind() == reflect.Pointer {
 		doVal = doVal.Elem()
-		for doVal.Kind() == reflect.Pointer {
-			doVal = doVal.Elem()
-		}
-		for _, column := range columns {
-			for i := 0; i < doVal.NumField(); i++ {
-				if col, ok := doVal.Type().Field(i).Tag.Lookup("db"); ok && (col == column || strings.Split(col, ";")[0] == column) {
-					fp := doVal.Field(i).Addr().Interface()
-					fields = append(fields, fp)
-					break
-				}
-
+	}
+	// pre-build column-to-field-index map
+	colIndexes := make([]int, len(columns))
+	for ci, column := range columns {
+		colIndexes[ci] = -1
+		for i := 0; i < doVal.NumField(); i++ {
+			if col, ok := doVal.Type().Field(i).Tag.Lookup("db"); ok && (col == column || strings.Split(col, ";")[0] == column) {
+				colIndexes[ci] = i
+				break
 			}
 		}
-		err = rows.Scan(fields...)
-		if err != nil {
+	}
+	for rows.Next() {
+		fields := make([]any, len(columns))
+		for ci, fi := range colIndexes {
+			if fi >= 0 {
+				fields[ci] = doVal.Field(fi).Addr().Interface()
+			} else {
+				var placeholder any
+				fields[ci] = &placeholder
+			}
+		}
+		if err = rows.Scan(fields...); err != nil {
 			return err
 		}
 	}
@@ -571,7 +569,7 @@ func (q *QueryExprWhereBuilder) UnionAll() *UnionBuilder {
 }
 
 func (q *QueryExprWhereBuilder) OrderBy(columns ...OrderBySpec) *SelectDsl {
-	q.queryExprDsl.selectDsl.orderBy.columns = columns
+	q.queryExprDsl.selectDsl.OrderBy(columns...)
 	return q.queryExprDsl.selectDsl
 }
 

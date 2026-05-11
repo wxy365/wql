@@ -24,6 +24,16 @@ func (d *Deletion) GetStatement(ctx *RenderCtx) *Statement {
 		b.Push(" ", whereStm.stm)
 		params = maps.Merge(params, whereStm.params)
 	}
+	if d.orderBy != nil {
+		obStm := d.orderBy.GetStatement(ctx)
+		b.Push(" ", obStm.stm)
+		params = maps.Merge(params, obStm.params)
+	}
+	if d.limit > 0 {
+		limitStm := (&PagingMdl{limit: d.limit}).GetStatement(ctx)
+		b.Push(" ", limitStm.stm)
+		params = maps.Merge(params, limitStm.params)
+	}
 	return &Statement{
 		stm:    b.String(),
 		params: params,

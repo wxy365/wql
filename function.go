@@ -187,7 +187,7 @@ type Substring struct {
 func (s *Substring) GetExpr(ctx *RenderCtx) string {
 	stm := fmt.Sprintf("substring(%s, %d, %d)", GetColFqn(ctx, s.column), s.offset, s.length)
 	return opt.Map(s.Alias(), func(alias string) string {
-		return stm + " " + alias
+		return stm + " " + ctx.dbType.escaper()(alias)
 	}).OrElse(stm)
 }
 

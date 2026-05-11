@@ -34,6 +34,7 @@ func (t *Table) As(alias string) ITable {
 func (t *Table) Col(columnName string) *Column {
 	col := &Column{}
 	col.name = columnName
+	col.setNamespace(t.Alias().OrElse(t.Name()))
 	return col
 }
 

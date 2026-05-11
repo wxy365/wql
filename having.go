@@ -13,9 +13,14 @@ type HavingMdl struct {
 func (h *HavingMdl) GetStatement(ctx *RenderCtx) *Statement {
 	params := make(map[int]any, 0)
 	b := text.Build("having ")
-	stm := h.criterion.GetStatement(ctx)
-	b.Push(stm.stm)
-	params = maps.Merge(params, stm.params)
+	var stm *Statement
+	if h.criterion == nil {
+		b.Push("1 = 1")
+	} else {
+		stm = h.criterion.GetStatement(ctx)
+		b.Push(stm.stm)
+		params = maps.Merge(params, stm.params)
+	}
 
 	for _, s := range h.subCriteria {
 		stm = s.GetStatement(ctx)
