@@ -28,7 +28,7 @@ func (i *Insertion[T]) GetStatement(ctx *RenderCtx) *Statement {
 	for j := 0; j < t.NumField(); j++ {
 		f := t.Field(j)
 		if col, ok := f.Tag.Lookup("db"); ok && col != "" && !strings.HasSuffix(col, ";auto_incr") {
-			fields = append(fields, col)
+			fields = append(fields, strings.Split(col, ";")[0])
 			fieldIndexes = append(fieldIndexes, j)
 		}
 	}

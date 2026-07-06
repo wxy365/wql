@@ -20,7 +20,7 @@ func (u *Updating) GetStatement(ctx *RenderCtx) *Statement {
 		if i > 0 {
 			b.Push(", ")
 		}
-		b.Push(val.column.Name(), " = ?")
+		b.Push(ctx.dbType.escaper()(val.column.Name()), " = ?")
 		params[int(ctx.cnt.Incr())] = val.value
 	}
 	if u.where != nil {

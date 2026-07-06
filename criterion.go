@@ -5,15 +5,21 @@ import (
 	"github.com/wxy365/basal/text"
 )
 
+// Criterion is the interface for WHERE/HAVING clause criteria. Implementations
+// must provide a StatementProvider that renders the criterion to SQL, and a
+// private identity method for type safety.
 type Criterion interface {
 	criterionIdentity()
 	StatementProvider
 }
 
+// BaseCriterion provides shared sub-criteria support for criterion types
+// that need AND/OR chaining.
 type BaseCriterion struct {
 	subCriteria []*AndOrCriteria
 }
 
+// GetStatement renders all sub-criteria joined together.
 func (b *BaseCriterion) GetStatement(ctx *RenderCtx) *Statement {
 	bd := text.Build()
 	params := make(map[int]any, 0)
@@ -31,12 +37,15 @@ func (b *BaseCriterion) GetStatement(ctx *RenderCtx) *Statement {
 
 func (b *BaseCriterion) criterionIdentity() {}
 
+// AndOrCriteria represents a grouped set of criteria connected by AND or OR,
+// rendered as "(criterion AND/OR criterion ...)".
 type AndOrCriteria struct {
 	connector      string
 	firstCriterion Criterion
 	subCriteria    []*AndOrCriteria
 }
 
+// GetStatement renders the grouped criteria wrapped in parentheses.
 func (a *AndOrCriteria) GetStatement(ctx *RenderCtx) *Statement {
 	b := text.Build()
 	params := make(map[int]any)
@@ -63,12 +72,16 @@ func (a *AndOrCriteria) GetStatement(ctx *RenderCtx) *Statement {
 	}
 }
 
+// ColumnConditionCriterion is a criterion that applies a Condition to a
+// specific column.
 type ColumnConditionCriterion struct {
 	BaseCriterion
 	column    IColumn
 	condition Condition
 }
 
+// GetStatement renders the column condition criterion with parameterized
+// values based on the Condition type.
 func (c *ColumnConditionCriterion) GetStatement(ctx *RenderCtx) *Statement {
 	fqn := GetColFqn(ctx, c.column)
 	b := text.Build()
@@ -122,11 +135,15 @@ func (c *ColumnConditionCriterion) GetStatement(ctx *RenderCtx) *Statement {
 
 func (c *ColumnConditionCriterion) criterionIdentity() {}
 
+// CriterionGroup groups a first criterion with additional sub-criteria,
+// rendered as a flat sequence.
 type CriterionGroup struct {
 	BaseCriterion
 	firstCriterion Criterion
 }
 
+// GetStatement renders the criterion group as a flat sequence of
+// first criterion followed by sub-criteria.
 func (c *CriterionGroup) GetStatement(ctx *RenderCtx) *Statement {
 	b := text.Build()
 	params := make(map[int]any)
@@ -150,12 +167,15 @@ func (c *CriterionGroup) GetStatement(ctx *RenderCtx) *Statement {
 
 func (c *CriterionGroup) criterionIdentity() {}
 
+// ExistsCriterion represents an EXISTS or NOT EXISTS criterion with a
+// sub-query.
 type ExistsCriterion struct {
 	existsPredicate *ExistsPredicate
 }
 
 func (e *ExistsCriterion) criterionIdentity() {}
 
+// GetStatement renders the EXISTS/NOT EXISTS sub-query criterion.
 func (e *ExistsCriterion) GetStatement(ctx *RenderCtx) *Statement {
 	selection := e.existsPredicate.selectionBuilder.Build()
 	stm := selection.GetStatement(ctx)
@@ -165,12 +185,14 @@ func (e *ExistsCriterion) GetStatement(ctx *RenderCtx) *Statement {
 	}
 }
 
+// NotCriterion wraps another criterion with a NOT operator.
 type NotCriterion struct {
 	*BaseCriterion
 }
 
 func (n *NotCriterion) criterionIdentity() {}
 
+// GetStatement wraps the inner criterion in "NOT (...)".
 func (n *NotCriterion) GetStatement(ctx *RenderCtx) *Statement {
 	stm := n.BaseCriterion.GetStatement(ctx)
 	return &Statement{

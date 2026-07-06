@@ -14,9 +14,7 @@ func (h *HavingMdl) GetStatement(ctx *RenderCtx) *Statement {
 	params := make(map[int]any, 0)
 	b := text.Build("having ")
 	var stm *Statement
-	if h.criterion == nil {
-		b.Push("1 = 1")
-	} else {
+	if h.criterion != nil {
 		stm = h.criterion.GetStatement(ctx)
 		b.Push(stm.stm)
 		params = maps.Merge(params, stm.params)

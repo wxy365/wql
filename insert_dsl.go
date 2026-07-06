@@ -50,7 +50,8 @@ func (i *InsertDsl[T]) Action(ctx context.Context, optDb ...*DB) error {
 	}
 	for j := 0; j < val.NumField(); j++ {
 		if col, ok := val.Type().Field(j).Tag.Lookup("db"); ok && strings.HasSuffix(col, ";auto_incr") {
-			val.Field(j).SetInt(id)
+			rowIdx := len(i.rows) - 1
+			val.Field(j).SetInt(id + int64(rowIdx))
 			break
 		}
 	}
@@ -81,7 +82,8 @@ func (i *InsertDsl[T]) ActionTx(ctx context.Context, tx *TX) error {
 	}
 	for j := 0; j < val.NumField(); j++ {
 		if col, ok := val.Type().Field(j).Tag.Lookup("db"); ok && strings.HasSuffix(col, ";auto_incr") {
-			val.Field(j).SetInt(id)
+			rowIdx := len(i.rows) - 1
+			val.Field(j).SetInt(id + int64(rowIdx))
 			break
 		}
 	}

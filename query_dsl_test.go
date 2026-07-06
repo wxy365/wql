@@ -61,7 +61,7 @@ func TestSelect1(t *testing.T) {
 		On("e.employee_id", EqualTo("total_sales.employee_id"))
 	selection := dsl.Build()
 	statement := selection.GetStatement(getMysqlRenderCtx())
-	if statement.stm != "select `e`.`employee_id`, `e`.`first_name`, `e`.`last_name`, `e`.`department`, `e`.`hire_date`, `e`.`total_amount` from `employees` `e` join (select `sales`.`employee_id`, sum(`sale_amount`) `total_amount` from `sales` group by `employee_id` order by `total_amount` desc limit 1) total_sales on `e`.`employee_id` = `total_sales`.`employee_id`" {
+	if statement.stm != "select `e`.`employee_id`, `e`.`first_name`, `e`.`last_name`, `e`.`department`, `e`.`hire_date`, `total_sales`.`total_amount` from `employees` `e` join (select `sales`.`employee_id`, sum(`sale_amount`) `total_amount` from `sales` group by `employee_id` order by `total_amount` desc limit 1) total_sales on `e`.`employee_id` = `total_sales`.`employee_id`" {
 		t.Fail()
 	}
 }

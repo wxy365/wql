@@ -5,12 +5,16 @@ import (
 	"github.com/wxy365/basal/text"
 )
 
+// Selection represents the result of a complete SELECT query, which may
+// consist of one or more QueryExprs combined via UNION / UNION ALL, along
+// with optional ORDER BY and paging (LIMIT/OFFSET) clauses.
 type Selection struct {
 	queryExprs []*QueryExpr
 	orderBy    *OrderByMdl
 	paging     *PagingMdl
 }
 
+// GetStatement renders the Selection into a parameterized SQL Statement.
 func (s *Selection) GetStatement(ctx *RenderCtx) *Statement {
 	b := text.Build()
 	params := make(map[int]any)
@@ -47,6 +51,8 @@ func (s *Selection) GetStatement(ctx *RenderCtx) *Statement {
 	}
 }
 
+// QueryExpr represents a single SELECT query expression (a single SELECT
+// statement without UNION, possibly with JOIN, WHERE, GROUP BY and HAVING).
 type QueryExpr struct {
 	connector  string
 	distinct   bool
@@ -58,6 +64,7 @@ type QueryExpr struct {
 	having     *HavingMdl
 }
 
+// GetStatement renders the QueryExpr into a parameterized SQL Statement.
 func (q *QueryExpr) GetStatement(ctx *RenderCtx) *Statement {
 	b := text.Build()
 	params := make(map[int]any)
@@ -119,6 +126,8 @@ func (q *QueryExpr) GetStatement(ctx *RenderCtx) *Statement {
 	}
 }
 
+// UnionQuery represents a UNION or UNION ALL query that combines multiple
+// SELECT statements into a single result set.
 type UnionQuery struct {
 	connector string
 	selection *Selection

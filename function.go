@@ -7,6 +7,7 @@ import (
 )
 
 // +-*/
+// AddFn represents a SQL addition expression: col1 + col2 + ...
 type AddFn struct {
 	iColumnAdapter
 	columns []IColumn
@@ -14,6 +15,7 @@ type AddFn struct {
 	namespaceAwareImpl
 }
 
+// Name returns an empty string; AddFn has no inherent column name.
 func (a *AddFn) Name() string {
 	return ""
 }
@@ -31,6 +33,7 @@ func (a *AddFn) GetExpr(ctx *RenderCtx) string {
 	return buildMultiColExpr(ctx, a.columns, a.Alias(), " + ", "(", ")")
 }
 
+// DivideFn represents a SQL division expression: col1 / col2 / ...
 type DivideFn struct {
 	iColumnAdapter
 	columns []IColumn
@@ -51,10 +54,12 @@ func (d *DivideFn) As(alias string) IColumn {
 	return d
 }
 
+// GetExpr renders the division expression as a SQL string.
 func (d *DivideFn) GetExpr(ctx *RenderCtx) string {
 	return buildMultiColExpr(ctx, d.columns, d.Alias(), " / ", "(", ")")
 }
 
+// MultiplyFn represents a SQL multiplication expression: col1 * col2 * ...
 type MultiplyFn struct {
 	iColumnAdapter
 	columns []IColumn
@@ -62,6 +67,7 @@ type MultiplyFn struct {
 	namespaceAwareImpl
 }
 
+// GetExpr renders the multiplication expression as a SQL string.
 func (m *MultiplyFn) GetExpr(ctx *RenderCtx) string {
 	return buildMultiColExpr(ctx, m.columns, m.Alias(), " * ", "(", ")")
 }
@@ -79,6 +85,7 @@ func (m *MultiplyFn) As(alias string) IColumn {
 	return m
 }
 
+// SubtractFn represents a SQL subtraction expression: col1 - col2 - ...
 type SubtractFn struct {
 	iColumnAdapter
 	columns []IColumn
@@ -86,6 +93,7 @@ type SubtractFn struct {
 	namespaceAwareImpl
 }
 
+// GetExpr renders the subtraction expression as a SQL string.
 func (s *SubtractFn) GetExpr(ctx *RenderCtx) string {
 	return buildMultiColExpr(ctx, s.columns, s.Alias(), " - ", "(", ")")
 }
@@ -103,6 +111,7 @@ func (s *SubtractFn) As(alias string) IColumn {
 	return s
 }
 
+// ConcatFn represents a SQL CONCAT function: concat(col1, col2, ...).
 type ConcatFn struct {
 	iColumnAdapter
 	columns []IColumn
@@ -110,6 +119,7 @@ type ConcatFn struct {
 	namespaceAwareImpl
 }
 
+// GetExpr renders the CONCAT function call as a SQL string.
 func (c *ConcatFn) GetExpr(ctx *RenderCtx) string {
 	return buildMultiColExpr(ctx, c.columns, c.Alias(), ", ", "concat(", ")")
 }
@@ -127,6 +137,7 @@ func (c *ConcatFn) As(alias string) IColumn {
 	return c
 }
 
+// LowerFn represents a SQL LOWER function: lower(column).
 type LowerFn struct {
 	iColumnAdapter
 	column IColumn
@@ -151,6 +162,7 @@ func (l *LowerFn) As(alias string) IColumn {
 	return l
 }
 
+// UpperFn represents a SQL UPPER function: upper(column).
 type UpperFn struct {
 	iColumnAdapter
 	column IColumn
@@ -175,6 +187,7 @@ func (u *UpperFn) As(alias string) IColumn {
 	return u
 }
 
+// Substring represents a SQL SUBSTRING function: substring(column, offset, length).
 type Substring struct {
 	iColumnAdapter
 	column IColumn

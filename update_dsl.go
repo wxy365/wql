@@ -81,16 +81,30 @@ func (u *UpdateDsl) Build() *Updating {
 	if len(u.values) == 0 {
 		panic("The columns to be updated are not specified.")
 	}
-	if u.whereBuilder == nil {
-		panic("The database update operation must include filter conditions")
+	var where *WhereMdl
+	if u.whereBuilder != nil {
+		where = u.whereBuilder.BuildModel()
 	}
 	return &Updating{
 		table:   u.table,
-		where:   u.whereBuilder.BuildModel(),
+		where:   where,
 		values:  u.values,
 		limit:   u.limit,
 		orderBy: u.orderBy,
 	}
+}
+
+func (u *UpdateDsl) Where(column IColumn, condition Condition, subCriteria ...*AndOrCriteria) *UpdateWhereBuilder {
+	b := &UpdateWhereBuilder{
+		updateDsl: u,
+		firstCriterion: &ColumnConditionCriterion{
+			column:    column,
+			condition: condition,
+		},
+		subCriteria: subCriteria,
+	}
+	u.whereBuilder = b
+	return b
 }
 
 func (u *UpdateDsl) Set(column string) *SetClauseEnd {
@@ -226,6 +240,10 @@ func (u *UpdateWhereBuilder) BuildModel() *WhereMdl {
 		criterion:   u.firstCriterion,
 		subCriteria: u.subCriteria,
 	}
+}
+
+func (u *UpdateWhereBuilder) Build() *Updating {
+	return u.updateDsl.Build()
 }
 
 type SetClauseEnd struct {

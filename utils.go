@@ -5,7 +5,10 @@ import "github.com/wxy365/basal/opt"
 // GetColFqn returns full qualified name of column, prefer using the column alias
 func GetColFqn(ctx *RenderCtx, column IColumn) string {
 	escaper := ctx.dbType.escaper()
-	colName := escaper(column.Alias().OrElse(column.Name()))
+	colName := column.Alias().OrElse(column.Name())
+	if colName != "*" {
+		colName = escaper(colName)
+	}
 	return opt.Map(
 		column.namespace(),
 		func(ns string) string {
