@@ -410,9 +410,9 @@ func (s *SelectDsl) Into(target any) *SelectDsl {
 // Action executes the SELECT query against the default data source or an
 // optional specified DB, scanning results into the target if configured.
 func (s *SelectDsl) Action(ctx context.Context, optDb ...*DB) error {
-	db := DataSource
-	if len(optDb) > 0 {
-		db = optDb[0]
+	db, err := resolveDB(optDb...)
+	if err != nil {
+		return err
 	}
 	renderCtx := &RenderCtx{
 		dbType: db.dbType,
@@ -429,6 +429,10 @@ func (s *SelectDsl) Action(ctx context.Context, optDb ...*DB) error {
 
 // ActionTx executes the SELECT query within a given transaction.
 func (s *SelectDsl) ActionTx(ctx context.Context, tx *TX) error {
+	tx, err := resolveTx(tx)
+	if err != nil {
+		return err
+	}
 	renderCtx := &RenderCtx{
 		dbType: tx.dbType,
 		cnt:    new(fn.Counter),
@@ -519,9 +523,7 @@ func (f *FromGather) From(table string) *SelectQueryExprDsl {
 // FromT specifies the table as an ITable reference for the SELECT query.
 func (f *FromGather) FromT(table ITable) *SelectQueryExprDsl {
 	for _, col := range f.selectList {
-		if ns := col.namespace(); !ns.IsPresent() {
-			col.setNamespace(table.Alias().OrElse(table.Name()))
-		}
+		col.setNamespaceImplicit(table.Alias().OrElse(table.Name()))
 	}
 	queryExpr := &SelectQueryExprDsl{
 		selectDsl:  f.selectDsl,

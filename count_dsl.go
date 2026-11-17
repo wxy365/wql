@@ -23,9 +23,9 @@ type CountDsl struct {
 }
 
 func (c *CountDsl) Action(ctx context.Context, optDb ...*DB) (uint64, error) {
-	db := DataSource
-	if len(optDb) > 0 {
-		db = optDb[0]
+	db, err := resolveDB(optDb...)
+	if err != nil {
+		return 0, err
 	}
 	var ret uint64
 	renderCtx := &RenderCtx{
@@ -34,11 +34,15 @@ func (c *CountDsl) Action(ctx context.Context, optDb ...*DB) (uint64, error) {
 	}
 	stm, args := c.Build().GetStatement(renderCtx).prepare()
 	row := db.QueryRowContext(ctx, stm, args...)
-	err := row.Scan(&ret)
+	err = row.Scan(&ret)
 	return ret, errs.Wrap(err, "Error in counting. sql: {0}, parameters: {1}", stm, args)
 }
 
 func (c *CountDsl) ActionTx(ctx context.Context, tx *TX) (uint64, error) {
+	tx, err := resolveTx(tx)
+	if err != nil {
+		return 0, err
+	}
 	var ret uint64
 	renderCtx := &RenderCtx{
 		dbType: tx.dbType,
@@ -46,7 +50,7 @@ func (c *CountDsl) ActionTx(ctx context.Context, tx *TX) (uint64, error) {
 	}
 	stm, args := c.Build().GetStatement(renderCtx).prepare()
 	row := tx.QueryRowContext(ctx, stm, args...)
-	err := row.Scan(&ret)
+	err = row.Scan(&ret)
 	return ret, errs.Wrap(err, "Error in counting. sql: {0}, parameters: {1}", stm, args)
 }
 
@@ -88,8 +92,8 @@ func CountFrom(table string) *CountDsl {
 	return CountFromT(Tbl(table))
 }
 func CountFromT(table ITable) *CountDsl {
+	// The star is never qualified: "count(`t`.*)" is not valid SQL.
 	col := Col("*")
-	col.setNamespace(table.Alias().OrElse(table.Name()))
 	return &CountDsl{
 		column:   col,
 		distinct: false,
@@ -111,7 +115,10 @@ func (c *CountFromGather) From(table string) *CountDsl {
 }
 
 func (c *CountFromGather) FromT(table ITable) *CountDsl {
-	c.column.setNamespace(table.Alias().OrElse(table.Name()))
+	// The star is never qualified: "count(`t`.*)" is not valid SQL.
+	if c.column.Name() != "*" {
+		c.column.setNamespaceImplicit(table.Alias().OrElse(table.Name()))
+	}
 	return &CountDsl{
 		column:   c.column,
 		distinct: c.distinct,

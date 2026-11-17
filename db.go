@@ -43,6 +43,27 @@ func init() {
 
 var DataSource *DB
 
+// resolveDB returns the database a statement must be run against: the
+// explicitly given one when there is any, the default data source otherwise.
+func resolveDB(optDb ...*DB) (*DB, error) {
+	if len(optDb) > 0 && optDb[0] != nil {
+		return optDb[0], nil
+	}
+	if DataSource == nil {
+		return nil, errs.New("Default data source not configured")
+	}
+	return DataSource, nil
+}
+
+// resolveTx returns the transaction a statement must be run in, and reports an
+// error when none is given.
+func resolveTx(tx *TX) (*TX, error) {
+	if tx == nil {
+		return nil, errs.New("The transaction is not specified")
+	}
+	return tx, nil
+}
+
 type DBCfg struct {
 	Driver             string `map:"driver"`
 	Dsn                string `map:"dsn"`

@@ -634,7 +634,7 @@ func TestInsertDO(t *testing.T) {
 		Address: "xxx city",
 	}
 	stm := InsertDO(u).Build().GetStatement(getMysqlRenderCtx())
-	if stm.stm != "insert into user(name, age, addr) values (?, ?, ?)" {
+	if stm.stm != "insert into `user`(`name`, `age`, `addr`) values (:1, :2, :3)" {
 		t.Errorf("got: %s", stm.stm)
 	}
 	if stm.params[1] != "wxy" || stm.params[2] != 18 || stm.params[3] != "xxx city" {
@@ -649,7 +649,7 @@ func TestUpdateSetWhere(t *testing.T) {
 		Set("name").EqualTo("new name").
 		Where(Col("id"), Eq(1)).
 		Build().GetStatement(getMysqlRenderCtx())
-	want := "update user set `name` = ? where `id` = :2"
+	want := "update `user` set `name` = :1 where `id` = :2"
 	if stm.stm != want {
 		t.Errorf("got:\n%s\nwant:\n%s", stm.stm, want)
 	}
@@ -664,7 +664,7 @@ func TestUpdateSetMultiple(t *testing.T) {
 		Set("age").EqualTo(30).
 		Where(Col("id"), Eq(1)).
 		Build().GetStatement(getMysqlRenderCtx())
-	want := "update user set `name` = ?, `age` = ? where `id` = :3"
+	want := "update `user` set `name` = :1, `age` = :2 where `id` = :3"
 	if stm.stm != want {
 		t.Errorf("got:\n%s\nwant:\n%s", stm.stm, want)
 	}
@@ -680,7 +680,7 @@ func TestUpdateOrderByLimit(t *testing.T) {
 		OrderBy(Col("last_login")).
 		Limit(100).
 		Build().GetStatement(getMysqlRenderCtx())
-	want := "update user set `status` = ? where `last_login` < :2 order by `last_login` limit 100"
+	want := "update `user` set `status` = :1 where `last_login` < :2 order by `last_login` limit 100"
 	if stm.stm != want {
 		t.Errorf("got:\n%s\nwant:\n%s", stm.stm, want)
 	}
@@ -713,7 +713,7 @@ func TestDeleteOrderByLimit(t *testing.T) {
 
 func TestCountStar(t *testing.T) {
 	stm := Count("*").From("user").Build().GetStatement(getMysqlRenderCtx())
-	want := "select count(`user`.*) from `user`"
+	want := "select count(*) from `user`"
 	if stm.stm != want {
 		t.Errorf("got:\n%s\nwant:\n%s", stm.stm, want)
 	}

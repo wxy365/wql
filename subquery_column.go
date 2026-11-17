@@ -35,6 +35,9 @@ func (s *SubQueryColumn) namespace() opt.Opt[string] {
 func (s *SubQueryColumn) setNamespace(ns string) {
 }
 
+func (s *SubQueryColumn) setNamespaceImplicit(ns string) {
+}
+
 // GetExpr renders the scalar subquery as a SQL expression: "(SELECT ...) alias".
 func (s *SubQueryColumn) GetExpr(ctx *RenderCtx) string {
 	stm := s.selection.GetStatement(ctx)

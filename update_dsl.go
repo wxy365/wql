@@ -130,26 +130,30 @@ func (u *UpdateDsl) OrderBy(spec ...OrderBySpec) *UpdateDsl {
 }
 
 func (u *UpdateDsl) Action(ctx context.Context, optDb ...*DB) error {
-	db := DataSource
-	if len(optDb) > 0 {
-		db = optDb[0]
+	db, err := resolveDB(optDb...)
+	if err != nil {
+		return err
 	}
 	renderCtx := &RenderCtx{
 		dbType: db.dbType,
 		cnt:    new(fn.Counter),
 	}
 	stm, params := u.Build().GetStatement(renderCtx).prepare()
-	_, err := db.ExecContext(ctx, stm, params...)
+	_, err = db.ExecContext(ctx, stm, params...)
 	return err
 }
 
 func (u *UpdateDsl) ActionTx(ctx context.Context, tx *TX) error {
+	tx, err := resolveTx(tx)
+	if err != nil {
+		return err
+	}
 	renderCtx := &RenderCtx{
 		dbType: tx.dbType,
 		cnt:    new(fn.Counter),
 	}
 	stm, params := u.Build().GetStatement(renderCtx).prepare()
-	_, err := tx.ExecContext(ctx, stm, params...)
+	_, err = tx.ExecContext(ctx, stm, params...)
 	return err
 }
 
@@ -233,6 +237,17 @@ func (u *UpdateWhereBuilder) Limit(limit int) *UpdateDsl {
 
 func (u *UpdateWhereBuilder) OrderBy(spec ...OrderBySpec) *UpdateDsl {
 	return u.updateDsl.OrderBy(spec...)
+}
+
+// Action executes the UPDATE query against the default data source or an
+// optional specified DB.
+func (u *UpdateWhereBuilder) Action(ctx context.Context, optDb ...*DB) error {
+	return u.updateDsl.Action(ctx, optDb...)
+}
+
+// ActionTx executes the UPDATE query within a given transaction.
+func (u *UpdateWhereBuilder) ActionTx(ctx context.Context, tx *TX) error {
+	return u.updateDsl.ActionTx(ctx, tx)
 }
 
 func (u *UpdateWhereBuilder) BuildModel() *WhereMdl {

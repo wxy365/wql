@@ -84,11 +84,15 @@ func (s *SubQuery) As(alias string) ITable {
 }
 
 // GetStatement renders the sub-query as a parenthesized SELECT statement
-// with its alias.
+// with its alias, when it has one.
 func (s *SubQuery) GetStatement(ctx *RenderCtx) *Statement {
 	stm := s.selection.GetStatement(ctx)
+	sql := "(" + stm.stm + ")"
+	if alias := s.Alias(); alias.IsPresent() {
+		sql += " " + alias.Get()
+	}
 	return &Statement{
-		stm:    "(" + stm.stm + ") " + s.Alias().Get(),
+		stm:    sql,
 		params: stm.params,
 	}
 }

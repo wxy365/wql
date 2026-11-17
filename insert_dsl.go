@@ -22,9 +22,9 @@ func (i *InsertDsl[T]) Build() *Insertion[T] {
 }
 
 func (i *InsertDsl[T]) Action(ctx context.Context, optDb ...*DB) error {
-	db := DataSource
-	if len(optDb) > 0 {
-		db = optDb[0]
+	db, err := resolveDB(optDb...)
+	if err != nil {
+		return err
 	}
 	renderCtx := &RenderCtx{
 		dbType: db.dbType,
@@ -39,26 +39,15 @@ func (i *InsertDsl[T]) Action(ctx context.Context, optDb ...*DB) error {
 	if err != nil {
 		return err
 	}
-	inserted := i.rows[len(i.rows)-1]
-	val := reflect.ValueOf(inserted)
-	if val.Kind() == reflect.Pointer {
-		val = val.Elem()
-	}
-	if !val.CanAddr() {
-		// non-addressable value (not a pointer), skip auto-increment write-back
-		return nil
-	}
-	for j := 0; j < val.NumField(); j++ {
-		if col, ok := val.Type().Field(j).Tag.Lookup("db"); ok && strings.HasSuffix(col, ";auto_incr") {
-			rowIdx := len(i.rows) - 1
-			val.Field(j).SetInt(id + int64(rowIdx))
-			break
-		}
-	}
+	writeBackAutoIncrId(i.rows, id)
 	return nil
 }
 
 func (i *InsertDsl[T]) ActionTx(ctx context.Context, tx *TX) error {
+	tx, err := resolveTx(tx)
+	if err != nil {
+		return err
+	}
 	renderCtx := &RenderCtx{
 		dbType: tx.dbType,
 		cnt:    new(fn.Counter),
@@ -72,22 +61,40 @@ func (i *InsertDsl[T]) ActionTx(ctx context.Context, tx *TX) error {
 	if err != nil {
 		return err
 	}
-	inserted := i.rows[len(i.rows)-1]
-	val := reflect.ValueOf(inserted)
-	if val.Kind() == reflect.Pointer {
-		val = val.Elem()
-	}
-	if !val.CanAddr() {
-		return nil
-	}
-	for j := 0; j < val.NumField(); j++ {
-		if col, ok := val.Type().Field(j).Tag.Lookup("db"); ok && strings.HasSuffix(col, ";auto_incr") {
-			rowIdx := len(i.rows) - 1
-			val.Field(j).SetInt(id + int64(rowIdx))
+	writeBackAutoIncrId(i.rows, id)
+	return nil
+}
+
+// writeBackAutoIncrId writes the id generated for the first inserted row back
+// into the auto-increment field of every inserted row. The ids of a multi-row
+// insert are consecutive, so the id of the row at index i is firstId + i.
+//
+// Rows that are not addressable (a struct value rather than a pointer to one)
+// are left untouched, since their id cannot be written back.
+func writeBackAutoIncrId[T any](rows []T, firstId int64) {
+	for idx, row := range rows {
+		val := reflect.ValueOf(row)
+		if val.Kind() == reflect.Pointer {
+			val = val.Elem()
+		}
+		if val.Kind() != reflect.Struct || !val.CanAddr() {
+			continue
+		}
+		for j := 0; j < val.NumField(); j++ {
+			col, ok := val.Type().Field(j).Tag.Lookup("db")
+			if !ok || !strings.HasSuffix(col, ";auto_incr") {
+				continue
+			}
+			f := val.Field(j)
+			switch f.Kind() {
+			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+				if f.CanSet() {
+					f.SetInt(firstId + int64(idx))
+				}
+			}
 			break
 		}
 	}
-	return nil
 }
 
 func Insert[T any](rows ...T) *IntoGather[T] {

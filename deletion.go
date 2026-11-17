@@ -17,11 +17,13 @@ func (d *Deletion) GetStatement(ctx *RenderCtx) *Statement {
 	params := make(map[int]any, 0)
 	b := text.Build("delete from ", escaper(d.table.name))
 	if alias := d.table.Alias(); alias.IsPresent() {
-		b.Push(" ", alias.Get())
+		b.Push(" ", escaper(alias.Get()))
 	}
 	if d.where != nil {
 		whereStm := d.where.GetStatement(ctx)
-		b.Push(" ", whereStm.stm)
+		if whereStm.stm != "" {
+			b.Push(" ", whereStm.stm)
+		}
 		params = maps.Merge(params, whereStm.params)
 	}
 	if d.orderBy != nil {

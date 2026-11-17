@@ -11,8 +11,15 @@ type WhereMdl struct {
 }
 
 func (w *WhereMdl) GetStatement(ctx *RenderCtx) *Statement {
-	b := text.Build("where ")
 	params := make(map[int]any)
+	if w.criterion == nil && len(w.subCriteria) == 0 {
+		// Nothing to filter on, the WHERE clause is left out altogether.
+		return &Statement{
+			stm:    "",
+			params: params,
+		}
+	}
+	b := text.Build("where ")
 	if w.criterion != nil {
 		stm := w.criterion.GetStatement(ctx)
 		b.Push(stm.stm)

@@ -127,6 +127,13 @@ func (c *ColumnConditionCriterion) GetStatement(ctx *RenderCtx) *Statement {
 		params = maps.Merge(params, subStm.params)
 	}
 
+	// The sub-criteria of the criterion itself are rendered after it.
+	for _, sub := range c.subCriteria {
+		subStm := sub.GetStatement(ctx)
+		b.Push(" ", subStm.stm)
+		params = maps.Merge(params, subStm.params)
+	}
+
 	return &Statement{
 		stm:    b.String(),
 		params: params,
@@ -150,7 +157,7 @@ func (c *CriterionGroup) GetStatement(ctx *RenderCtx) *Statement {
 	if c.firstCriterion != nil {
 		stm := c.firstCriterion.GetStatement(ctx)
 		b.Push(stm.stm)
-		params = stm.params
+		params = maps.Merge(params, stm.params)
 	}
 	if len(c.subCriteria) > 0 {
 		for _, cri := range c.subCriteria {

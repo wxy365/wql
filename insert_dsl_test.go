@@ -24,7 +24,7 @@ func TestInsert(t *testing.T) {
 	}
 	insertion := InsertDO(u).Build()
 	stm := insertion.GetStatement(getMysqlRenderCtx())
-	if stm.stm != "insert into user(name, age, addr) values (?, ?, ?)" {
+	if stm.stm != "insert into `user`(`name`, `age`, `addr`) values (:1, :2, :3)" {
 		t.Fail()
 	}
 	if stm.params[1] != "wxy" || stm.params[2] != 18 || stm.params[3] != "xxx city" {

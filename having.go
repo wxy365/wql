@@ -12,6 +12,13 @@ type HavingMdl struct {
 
 func (h *HavingMdl) GetStatement(ctx *RenderCtx) *Statement {
 	params := make(map[int]any, 0)
+	if h.criterion == nil && len(h.subCriteria) == 0 {
+		// Nothing to filter on, the HAVING clause is left out altogether.
+		return &Statement{
+			stm:    "",
+			params: params,
+		}
+	}
 	b := text.Build("having ")
 	var stm *Statement
 	if h.criterion != nil {

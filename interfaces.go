@@ -38,10 +38,12 @@ type orderAware interface {
 type namespaceAware interface {
 	namespace() opt.Opt[string]
 	setNamespace(ns string)
+	setNamespaceImplicit(ns string)
 }
 
 type namespaceAwareImpl struct {
-	ns string
+	ns       string
+	explicit bool
 }
 
 func (n *namespaceAwareImpl) namespace() opt.Opt[string] {
@@ -49,5 +51,16 @@ func (n *namespaceAwareImpl) namespace() opt.Opt[string] {
 }
 
 func (n *namespaceAwareImpl) setNamespace(ns string) {
+	n.ns = ns
+	n.explicit = true
+}
+
+// setNamespaceImplicit sets the namespace unless it has been set explicitly,
+// which keeps a column from being qualified with the table of a previous query
+// when the very same column is reused.
+func (n *namespaceAwareImpl) setNamespaceImplicit(ns string) {
+	if n.explicit {
+		return
+	}
 	n.ns = ns
 }

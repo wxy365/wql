@@ -103,7 +103,9 @@ func (q *QueryExpr) GetStatement(ctx *RenderCtx) *Statement {
 
 	if q.where != nil {
 		stm = q.where.GetStatement(ctx)
-		b.Push(" " + stm.stm)
+		if stm.stm != "" {
+			b.Push(" " + stm.stm)
+		}
 		params = maps.Merge(params, stm.params)
 	}
 
@@ -114,7 +116,9 @@ func (q *QueryExpr) GetStatement(ctx *RenderCtx) *Statement {
 
 	if q.having != nil {
 		stm = q.having.GetStatement(ctx)
-		b.Push(" " + stm.stm)
+		if stm.stm != "" {
+			b.Push(" " + stm.stm)
+		}
 		params = maps.Merge(params, stm.params)
 	}
 

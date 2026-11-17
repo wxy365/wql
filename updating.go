@@ -1,6 +1,8 @@
 package q
 
 import (
+	"strconv"
+
 	"github.com/wxy365/basal/ds/maps"
 	"github.com/wxy365/basal/text"
 )
@@ -14,18 +16,22 @@ type Updating struct {
 }
 
 func (u *Updating) GetStatement(ctx *RenderCtx) *Statement {
-	b := text.Build("update ", u.table.Name(), " set ")
+	escaper := ctx.dbType.escaper()
+	b := text.Build("update ", escaper(u.table.Name()), " set ")
 	params := make(map[int]any)
 	for i, val := range u.values {
 		if i > 0 {
 			b.Push(", ")
 		}
-		b.Push(ctx.dbType.escaper()(val.column.Name()), " = ?")
-		params[int(ctx.cnt.Incr())] = val.value
+		placeholder := ctx.cnt.Incr()
+		b.Push(escaper(val.column.Name()), " = :", strconv.FormatInt(placeholder, 10))
+		params[int(placeholder)] = val.value
 	}
 	if u.where != nil {
 		stm := u.where.GetStatement(ctx)
-		b.Push(" ", stm.stm)
+		if stm.stm != "" {
+			b.Push(" ", stm.stm)
+		}
 		params = maps.Merge(params, stm.params)
 	}
 	if u.orderBy != nil {
