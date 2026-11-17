@@ -1,10 +1,10 @@
 module github.com/wxy365/wql
 
-go 1.25
+go 1.25.0
 
 require (
 	github.com/go-sql-driver/mysql v1.7.1
-	github.com/wxy365/basal v0.0.0-20241113160748-17dda0a8985d
+	github.com/wxy365/basal v0.0.0-20260706015509-131fc45b3e9d
 )
 
 require (
@@ -14,4 +14,5 @@ require (
 	github.com/rs/zerolog v1.32.0 // indirect
 	golang.org/x/sys v0.12.0 // indirect
 	golang.org/x/text v0.14.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
